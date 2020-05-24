@@ -2,8 +2,11 @@ use sdl2;
 use sdl2::pixels;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
+use rand::Rng;
+use std::thread;
+use std::time;
 
-    const SCALE_FACTOR: u32 = 20;
+const SCALE_FACTOR: u32 = 20;
 const W_HEIGHT: u32 = 32 as u32;
 const W_WIDTH: u32 = 64 as u32;
 
@@ -39,6 +42,25 @@ impl Display {
             }
         }
         self.canvas.present();
+    }
+
+    // Just for testing display
+    pub fn display_tester(&mut self) {
+        let mut vram: [[u8; 64]; 32] = [[1; 64 as usize]; 32 as usize];
+        let mut rng = rand::thread_rng();
+
+        loop {
+            for _i in 0..100 {
+                let vram2 = vram.clone();
+                for (y, _row) in vram2.iter().enumerate() {
+                    for (x, _row) in vram2[y].iter().enumerate() {
+                        vram[y][x] = rng.gen_range(0, 2) as u8;
+                    }
+                }
+                self.draw(&vram);
+                thread::sleep(time::Duration::from_millis(11))
+            }
+        }
     }
 
 }
