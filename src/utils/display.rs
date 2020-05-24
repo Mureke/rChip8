@@ -23,7 +23,7 @@ impl Display {
             W_HEIGHT * SCALE_FACTOR,
         ).position_centered()
             .opengl().build().unwrap();
-        let mut canvas = window.into_canvas().build().unwrap_or_else(|_e| panic!("ERROR"));
+        let mut canvas = window.into_canvas().build().unwrap_or_else(|e| panic!("Error: {}", e));
 
         canvas.set_draw_color(color(0));
         canvas.clear();
@@ -38,7 +38,9 @@ impl Display {
                 let x = (x as u32) * SCALE_FACTOR;
                 let y = (y as u32) * SCALE_FACTOR;
                 self.canvas.set_draw_color(color(col));
-                self.canvas.fill_rect(Rect::new(x as i32, y as i32, SCALE_FACTOR, SCALE_FACTOR));
+                self.canvas.fill_rect(
+                    Rect::new(x as i32, y as i32, SCALE_FACTOR, SCALE_FACTOR)
+                ).unwrap_or_else(|e| panic!("Error: {}", e));
             }
         }
         self.canvas.present();
@@ -62,13 +64,12 @@ impl Display {
             }
         }
     }
-
 }
 
 pub fn color(input: u8) -> pixels::Color {
     match input {
-        0 => return pixels::Color::RGB(0,0,0),
-        1 => return pixels::Color::RGB(255,255,255),
+        0 => return pixels::Color::RGB(0, 0, 0),
+        1 => return pixels::Color::RGB(255, 255, 255),
         _ => panic!("Invalid value")
     }
 }

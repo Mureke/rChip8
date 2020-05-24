@@ -1,10 +1,12 @@
 mod cpu;
 mod utils;
+mod font_set;
+
+use cpu::Cpu;
 use utils::Display;
 
 use std::process::exit;
-use std::time;
-use std::thread;
+
 
 fn main() {
     let sdl2_context = sdl2::init().unwrap();
@@ -12,6 +14,8 @@ fn main() {
     let mut display = Display::new(&sdl2_context);
 
     display.display_tester();
+
+    let mut processor = Cpu::new();
 
     exit(0)
 }
