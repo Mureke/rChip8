@@ -3,6 +3,9 @@ use crate::utils::RomReader;
 use std::process::exit;
 
 pub struct Cpu {
+    /// Cpu
+    /// Used this article as a reference:
+    /// http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
     opcode: u16,
     // Opcode
     ram: [u8; 4096],
