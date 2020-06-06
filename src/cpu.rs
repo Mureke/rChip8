@@ -8,14 +8,14 @@ pub struct Cpu {
     /// http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
     opcode: u16,
     // Opcode
-    ram: [u8; 4096],
+    memory: [u8; 4096],
     // Memory TODO: Remove pub
     v: [u8; 16],
     // CPU registers
     pc: usize,
     // Index register
     i: usize,
-    // Program counter,
+    // Progmemory counter,
     pub vram: [[u8; 64]; 32],
     pub vram_changed: bool,
     delay_timer: u8,
@@ -28,14 +28,14 @@ pub struct Cpu {
 
 impl Cpu {
     pub fn new() -> Self {
-        let mut ram = [0u8; 4096];
+        let mut memory = [0u8; 4096];
         for i in 0..FONT_SET.len() {
-            ram[i] = FONT_SET[i];
+            memory[i] = FONT_SET[i];
         }
 
         Cpu {
             opcode: 0,
-            ram: ram,
+            memory: memory,
             v: [0; 16],
             pc: 0x200,
             i: 0,
@@ -54,7 +54,7 @@ impl Cpu {
         for (i, &byte) in input.iter().enumerate() {
             let address = 0x200 + 1;
             if address < 4096 {
-                self.ram[0x200 + i] = byte;
+                self.memory[0x200 + i] = byte;
             } else {
                 break;
             }
@@ -68,9 +68,9 @@ impl Cpu {
     fn fetch_and_decode_opcode(&mut self) {
         /// Fetch and decode opcodes
         /// Since chip8 opcodes are two bytes long we are combining
-        /// Two bytes from ram at pc and pc+1
-        let byte1 = (self.ram[self.pc] as u16) << 8;
-        let byte2 = self.ram[self.pc+1] as u16;
+        /// Two bytes from memory at pc and pc+1
+        let byte1 = (self.memory[self.pc] as u16) << 8;
+        let byte2 = self.memory[self.pc+1] as u16;
         self.opcode = byte1 | byte2;
 
         println!("{:b}", byte1);
@@ -78,3 +78,7 @@ impl Cpu {
         println!("{:b}", self.opcode);
     }
 }
+
+#[cfg(test)]
+#[path = "./cpu_tests.rs"]
+mod cpu_tests;
