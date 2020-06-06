@@ -5,7 +5,7 @@ use std::process::exit;
 pub struct Cpu {
     opcode: u16,
     // Opcode
-    pub ram: [u8; 4096],
+    ram: [u8; 4096],
     // Memory TODO: Remove pub
     v: [u8; 16],
     // CPU registers
