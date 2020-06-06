@@ -23,7 +23,7 @@ impl Audio{
             SquareWave {
                 phase_inc: 440.0 / spec.freq as f32,
                 phase: 0.0,
-                volume: 0.25
+                volume: 0.05
             }
         }).unwrap();
 
@@ -53,7 +53,7 @@ impl AudioCallback for SquareWave {
         // Generate a square wave
         for x in out.iter_mut() {
             *x = match self.phase {
-                0.0...0.5 => self.volume,
+                0.0..=0.5 => self.volume,
                 _ => -self.volume
             };
             self.phase = (self.phase + self.phase_inc) % 1.0;

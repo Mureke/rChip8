@@ -1,8 +1,9 @@
 use crate::font_set::FONT_SET;
 use crate::utils::RomReader;
+use std::process::exit;
 
 pub struct Cpu {
-    opcode: u8,
+    opcode: u16,
     // Opcode
     pub ram: [u8; 4096],
     // Memory TODO: Remove pub
@@ -12,8 +13,8 @@ pub struct Cpu {
     // Index register
     i: usize,
     // Program counter,
-    vram: [[u8; 64]; 32],
-    vram_changed: bool,
+    pub vram: [[u8; 64]; 32],
+    pub vram_changed: bool,
     delay_timer: u8,
     sound_timer: u8,
     stack: [usize; 16],
@@ -55,5 +56,22 @@ impl Cpu {
                 break;
             }
         }
+    }
+
+    pub fn cycle(&mut self) {
+        self.fetch_and_decode_opcode(); // Decode opcode and set to self.opcode
+    }
+
+    fn fetch_and_decode_opcode(&mut self) {
+        /// Fetch and decode opcodes
+        /// Since chip8 opcodes are two bytes long we are combining
+        /// Two bytes from ram at pc and pc+1
+        let byte1 = (self.ram[self.pc] as u16) << 8;
+        let byte2 = self.ram[self.pc+1] as u16;
+        self.opcode = byte1 | byte2;
+
+        println!("{:b}", byte1);
+        println!("0000000{:b}", byte2 );
+        println!("{:b}", self.opcode);
     }
 }
