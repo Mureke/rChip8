@@ -2,6 +2,12 @@ use crate::font_set::FONT_SET;
 use crate::utils::RomReader;
 use std::process::exit;
 
+pub struct CycleState<'a> {
+    pub vram_changed: bool,
+    pub vram: &'a [[u8; 64]; 32],
+    pub sound: bool,
+}
+
 pub struct Cpu {
     /// Cpu
     /// Used this article as a reference:
@@ -18,8 +24,8 @@ pub struct Cpu {
     // Progmemory counter,
     pub vram: [[u8; 64]; 32],
     pub vram_changed: bool,
-    delay_timer: u8,
-    sound_timer: u8,
+    pub delay_timer: u8,
+    pub sound_timer: u8,
     stack: [usize; 16],
     sp: usize,
     keys: [bool; 16],
@@ -61,21 +67,58 @@ impl Cpu {
         }
     }
 
-    pub fn cycle(&mut self) {
+    pub fn cycle(&mut self) -> CycleState {
+        self.vram_changed = false;
         self.fetch_and_decode_opcode(); // Decode opcode and set to self.opcode
+        self.run_opcode();
+
+        let cycle_state = CycleState {
+            vram_changed: self.vram_changed,
+            vram: &self.vram,
+            sound: self.sound_timer > 0
+        };
+        if self.sound_timer == 1 {
+            self.sound_timer = 0;
+        }
+
+        cycle_state
     }
+
 
     fn fetch_and_decode_opcode(&mut self) {
         /// Fetch and decode opcodes
         /// Since chip8 opcodes are two bytes long we are combining
         /// Two bytes from memory at pc and pc+1
         let byte1 = (self.memory[self.pc] as u16) << 8;
-        let byte2 = self.memory[self.pc+1] as u16;
+        let byte2 = self.memory[self.pc + 1] as u16;
         self.opcode = byte1 | byte2;
 
         println!("{:b}", byte1);
-        println!("0000000{:b}", byte2 );
+        println!("0000000{:b}", byte2);
         println!("{:b}", self.opcode);
+    }
+
+    fn run_opcode(&mut self) {
+        let nibbles = (
+            (self.opcode & 0xF000) >> 12,
+            (self.opcode & 0x0F00) >> 8,
+            (self.opcode & 0x00F0) >> 4,
+            (self.opcode & 0x000F)
+        );
+
+        let nnn = self.opcode & 0x0FFF;
+        let kk = (self.opcode & 0x00FF) as u8;
+        let x = nibbles.1;
+        let y = nibbles.2;
+        let n = nibbles.3;
+
+        println!("opcode: {:b}", self.opcode);
+        println!("nnn: {:b}", nnn);
+        println!("kk: {:b}", kk);
+        println!("x: {:b}", x);
+        println!("y: {:b}", y);
+        println!("n: {:b}", n);
+        exit(0)
     }
 }
 

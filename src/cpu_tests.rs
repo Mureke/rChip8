@@ -23,4 +23,6 @@ fn test_load_data() {
     assert_eq!(cpu.memory[mempointer+3], 43);
 }
 
-// TODO: Write tests for opcodes and write opcode runner based on tests
+// TODO: Write tests for opcodes and write opcode
+//
+// based on tests

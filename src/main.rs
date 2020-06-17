@@ -41,10 +41,16 @@ fn main() {
 
     // Main loop.
     while let Ok(event) = event_handler.event_poller() {
-        processor.cycle();
-        if processor.vram_changed {
-            display.draw(&processor.vram);
-            processor.vram_changed = false;
+        let cycle_state = processor.cycle();
+        if cycle_state.vram_changed {
+            display.draw(cycle_state.vram);
+        }
+
+        // Check delay timers and output timers
+        if cycle_state.sound  {
+            audio.start_audio()
+        } else {
+            audio.stop_audio()
         }
     }
     exit(0)
