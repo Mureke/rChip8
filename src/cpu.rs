@@ -84,11 +84,10 @@ impl Cpu {
         cycle_state
     }
 
-
+    /// Fetch and decode opcodes
+    /// Since chip8 opcodes are two bytes long we are combining
+    /// Two bytes from memory at pc and pc+1
     fn fetch_and_decode_opcode(&mut self) -> u16 {
-        /// Fetch and decode opcodes
-        /// Since chip8 opcodes are two bytes long we are combining
-        /// Two bytes from memory at pc and pc+1
         let byte1 = (self.memory[self.pc] as u16) << 8;
         let byte2 = self.memory[self.pc + 1] as u16;
         self.opcode = byte1 | byte2;
@@ -122,16 +121,24 @@ impl Cpu {
         println!("n: {:b}", n);
 
         match (nibbles) {
-            (0, 0, 0xe, 0) => self.op_00e0(), // CLS
+            (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(), // CLS
+            (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(), // RET
             (_, _, _, _) => ()
         }
     }
 
+    /// CLS
+    /// Clear the display
     fn op_00e0(&mut self){
-        /// CLS
-        /// Clear the display
         self.vram = [[0; 64]; 32];
         self.vram_changed = true;
+    }
+
+    /// RET - Return from a subroutine
+    /// The interpreter sets the program counter to the address at the top of the stack,
+    /// then subtracts 1 from the stack pointer.
+    fn op_00ee(&mut self){
+
     }
 
 }
