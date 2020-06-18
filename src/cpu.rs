@@ -69,8 +69,8 @@ impl Cpu {
 
     pub fn cycle(&mut self) -> CycleState {
         self.vram_changed = false;
-        self.fetch_and_decode_opcode(); // Decode opcode and set to self.opcode
-        self.run_opcode();
+        let opcode = self.fetch_and_decode_opcode(); // Decode opcode and set to self.opcode
+        self.run_opcode(opcode);
 
         let cycle_state = CycleState {
             vram_changed: self.vram_changed,
@@ -85,7 +85,7 @@ impl Cpu {
     }
 
 
-    fn fetch_and_decode_opcode(&mut self) {
+    fn fetch_and_decode_opcode(&mut self) -> u16 {
         /// Fetch and decode opcodes
         /// Since chip8 opcodes are two bytes long we are combining
         /// Two bytes from memory at pc and pc+1
@@ -96,18 +96,20 @@ impl Cpu {
         println!("{:b}", byte1);
         println!("0000000{:b}", byte2);
         println!("{:b}", self.opcode);
+        self.opcode
     }
 
-    fn run_opcode(&mut self) {
+    fn run_opcode(&mut self, opcode: u16) {
+
         let nibbles = (
-            (self.opcode & 0xF000) >> 12,
-            (self.opcode & 0x0F00) >> 8,
-            (self.opcode & 0x00F0) >> 4,
-            (self.opcode & 0x000F)
+            (opcode & 0xF000) >> 12,
+            (opcode & 0x0F00) >> 8,
+            (opcode & 0x00F0) >> 4,
+            (opcode & 0x000F)
         );
 
-        let nnn = self.opcode & 0x0FFF;
-        let kk = (self.opcode & 0x00FF) as u8;
+        let nnn = opcode & 0x0FFF;
+        let kk = (opcode & 0x00FF) as u8;
         let x = nibbles.1;
         let y = nibbles.2;
         let n = nibbles.3;
@@ -118,8 +120,20 @@ impl Cpu {
         println!("x: {:b}", x);
         println!("y: {:b}", y);
         println!("n: {:b}", n);
-        exit(0)
+
+        match (nibbles) {
+            (0, 0, 0xe, 0) => self.op_00e0(), // CLS
+            (_, _, _, _) => ()
+        }
     }
+
+    fn op_00e0(&mut self){
+        /// CLS
+        /// Clear the display
+        self.vram = [[0; 64]; 32];
+        self.vram_changed = true;
+    }
+
 }
 
 #[cfg(test)]
