@@ -18,9 +18,9 @@ fn test_load_data() {
 
     let mempointer = 0x200;
     assert_eq!(cpu.memory[mempointer], 0);
-    assert_eq!(cpu.memory[mempointer+1] , 0);
-    assert_eq!(cpu.memory[mempointer+2], 33);
-    assert_eq!(cpu.memory[mempointer+3], 43);
+    assert_eq!(cpu.memory[mempointer + 1], 0);
+    assert_eq!(cpu.memory[mempointer + 2], 33);
+    assert_eq!(cpu.memory[mempointer + 3], 43);
 }
 
 // CLS = Clear the display
@@ -36,6 +36,17 @@ fn test_op00e0() {
             assert_eq!(cpu.vram[y][x], 0)
         }
     }
+}
+
+// RET
+#[test]
+fn test_op00ee() {
+    let mut cpu = Cpu::new();
+    cpu.sp = 4;
+    cpu.stack[3] = 0x664;
+    cpu.run_opcode(0x00ee);
+    assert_eq!(cpu.pc, 0x664);
+    assert_eq!(cpu.sp, 3);
 }
 // TODO: Write tests for opcodes and write opcode
 //

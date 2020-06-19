@@ -8,6 +8,15 @@ pub struct CycleState<'a> {
     pub sound: bool,
 }
 
+enum PointerAction{
+    Next,
+    Jump(usize)
+}
+
+impl PointerAction{
+
+}
+
 pub struct Cpu {
     /// Cpu
     /// Used this article as a reference:
@@ -120,24 +129,32 @@ impl Cpu {
         println!("y: {:b}", y);
         println!("n: {:b}", n);
 
-        match (nibbles) {
+        let pc_action = match (nibbles) {
             (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(), // CLS
             (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(), // RET
-            (_, _, _, _) => ()
+            _ => PointerAction::Next
+        };
+
+        match pc_action {
+            PointerAction::Next => self.pc += 2,
+            PointerAction::Jump(address) => self.pc = address,
         }
     }
 
     /// CLS
     /// Clear the display
-    fn op_00e0(&mut self){
+    fn op_00e0(&mut self) -> PointerAction{
         self.vram = [[0; 64]; 32];
         self.vram_changed = true;
+        PointerAction::Next
     }
 
     /// RET - Return from a subroutine
     /// The interpreter sets the program counter to the address at the top of the stack,
     /// then subtracts 1 from the stack pointer.
-    fn op_00ee(&mut self){
+    fn op_00ee(&mut self) -> PointerAction {
+        self.sp -= 1;
+        PointerAction::Jump(self.stack[self.sp])
 
     }
 
