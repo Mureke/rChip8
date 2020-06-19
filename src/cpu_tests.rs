@@ -48,6 +48,14 @@ fn test_op00ee() {
     assert_eq!(cpu.pc, 0x664);
     assert_eq!(cpu.sp, 3);
 }
+
+// JP addr
+#[test]
+fn test_op1nnn() {
+    let mut cpu = Cpu::new();
+    cpu.run_opcode(0x1267);
+    assert_eq!(cpu.pc, 0x0267);
+}
 // TODO: Write tests for opcodes and write opcode
 //
 // based on tests

@@ -116,7 +116,7 @@ impl Cpu {
             (opcode & 0x000F)
         );
 
-        let nnn = opcode & 0x0FFF;
+        let nnn = (opcode & 0x0FFF) as usize;
         let kk = (opcode & 0x00FF) as u8;
         let x = nibbles.1;
         let y = nibbles.2;
@@ -132,6 +132,7 @@ impl Cpu {
         let pc_action = match (nibbles) {
             (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(), // CLS
             (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(), // RET
+            (0x01, _, _, _) => self.op_1nnn(nnn), // JP
             _ => PointerAction::Next
         };
 
@@ -155,7 +156,10 @@ impl Cpu {
     fn op_00ee(&mut self) -> PointerAction {
         self.sp -= 1;
         PointerAction::Jump(self.stack[self.sp])
+    }
 
+    fn op_1nnn(&mut self, nnn: usize) -> PointerAction {
+        PointerAction::Jump(nnn)
     }
 
 }
