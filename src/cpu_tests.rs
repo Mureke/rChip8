@@ -56,6 +56,19 @@ fn test_op1nnn() {
     cpu.run_opcode(0x1267);
     assert_eq!(cpu.pc, 0x0267);
 }
+
+// CALL addr
+#[test]
+fn test_op2nnn() {
+    let mut cpu = Cpu::new();
+    cpu.sp = 0;
+    cpu.pc = 0x02666;
+    cpu.run_opcode(0x2267);
+    assert_eq!(cpu.sp, 1);
+    assert_eq!(cpu.stack[0], 0x02666);
+    assert_eq!(cpu.pc, 0x0267)
+}
+
 // TODO: Write tests for opcodes and write opcode
 //
 // based on tests

@@ -8,14 +8,12 @@ pub struct CycleState<'a> {
     pub sound: bool,
 }
 
-enum PointerAction{
+enum PointerAction {
     Next,
-    Jump(usize)
+    Jump(usize),
 }
 
-impl PointerAction{
-
-}
+impl PointerAction {}
 
 pub struct Cpu {
     /// Cpu
@@ -84,7 +82,7 @@ impl Cpu {
         let cycle_state = CycleState {
             vram_changed: self.vram_changed,
             vram: &self.vram,
-            sound: self.sound_timer > 0
+            sound: self.sound_timer > 0,
         };
         if self.sound_timer == 1 {
             self.sound_timer = 0;
@@ -108,7 +106,6 @@ impl Cpu {
     }
 
     fn run_opcode(&mut self, opcode: u16) {
-
         let nibbles = (
             (opcode & 0xF000) >> 12,
             (opcode & 0x0F00) >> 8,
@@ -133,6 +130,7 @@ impl Cpu {
             (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(), // CLS
             (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(), // RET
             (0x01, _, _, _) => self.op_1nnn(nnn), // JP
+            (0x02, _, _, _) => self.op_2nnn(nnn), // CALL
             _ => PointerAction::Next
         };
 
@@ -144,7 +142,7 @@ impl Cpu {
 
     /// CLS
     /// Clear the display
-    fn op_00e0(&mut self) -> PointerAction{
+    fn op_00e0(&mut self) -> PointerAction {
         self.vram = [[0; 64]; 32];
         self.vram_changed = true;
         PointerAction::Next
@@ -162,6 +160,14 @@ impl Cpu {
         PointerAction::Jump(nnn)
     }
 
+    /// CALL
+    /// The interpreter increments the stack pointer,
+    /// then puts the current PC on the top of the stack. The PC is then set to nnn.
+    fn op_2nnn(&mut self, nnn: usize) -> PointerAction {
+        self.stack[self.sp] = self.pc;
+        self.sp += 1;
+        PointerAction::Jump(nnn)
+    }
 }
 
 #[cfg(test)]
