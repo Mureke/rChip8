@@ -119,7 +119,7 @@ impl Cpu {
         let y = nibbles.2;
         let n = nibbles.3;
 
-        println!("opcode: {:b}", self.opcode);
+        println!("opcode: {:b}", opcode);
         println!("nnn: {:b}", nnn);
         println!("kk: {:b}", kk);
         println!("x: {:b}", x);
