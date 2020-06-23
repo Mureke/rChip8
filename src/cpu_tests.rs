@@ -69,6 +69,14 @@ fn test_op2nnn() {
     assert_eq!(cpu.pc, 0x0267)
 }
 
+// SE Vx, byte
+#[test]
+fn test_op3xkk() {
+    let mut cpu = Cpu::new();
+    cpu.sp = 0;
+    // TODO: Finish this
+}
+
 // TODO: Write tests for opcodes and write opcode
 //
 // based on tests

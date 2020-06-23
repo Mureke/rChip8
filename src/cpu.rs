@@ -1,6 +1,7 @@
 use crate::font_set::FONT_SET;
 use crate::utils::RomReader;
 use std::process::exit;
+use sdl2::hint::set;
 
 pub struct CycleState<'a> {
     pub vram_changed: bool,
@@ -13,12 +14,21 @@ enum PointerAction {
     Jump(usize),
 }
 
-impl PointerAction {}
+impl PointerAction {
+    fn skip_or_next(condition: bool, addr: usize) -> PointerAction {
+        if condition {
+            PointerAction::Jump(addr)
+        } else {
+            PointerAction::Next
+        }
+    }
+}
 
 pub struct Cpu {
     /// Cpu
-    /// Used this article as a reference:
+    /// Used these articles as reference:
     /// http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
+    /// http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
     opcode: u16,
     // Opcode
     memory: [u8; 4096],
@@ -48,7 +58,7 @@ impl Cpu {
 
         Cpu {
             opcode: 0,
-            memory: memory,
+            memory,
             v: [0; 16],
             pc: 0x200,
             i: 0,
@@ -156,17 +166,27 @@ impl Cpu {
         PointerAction::Jump(self.stack[self.sp])
     }
 
+    /// JP addr
+    /// Jump to location nnn.
+    /// The interpreter sets the program counter to nnn.
     fn op_1nnn(&mut self, nnn: usize) -> PointerAction {
         PointerAction::Jump(nnn)
     }
 
-    /// CALL
+    /// CALL addr
     /// The interpreter increments the stack pointer,
     /// then puts the current PC on the top of the stack. The PC is then set to nnn.
     fn op_2nnn(&mut self, nnn: usize) -> PointerAction {
         self.stack[self.sp] = self.pc;
         self.sp += 1;
         PointerAction::Jump(nnn)
+    }
+
+    /// 3xkk - SE Vx, byte
+    ///  Skip next instruction if Vx = kk.
+    /// The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
+    fn op_3xkk(&mut self, x: u16, kk: u8) -> PointerAction {
+        PointerAction::skip_or_next((self.v[x] == kk), self.pc+2)
     }
 }
 
