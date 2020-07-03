@@ -11,13 +11,14 @@ pub struct CycleState<'a> {
 
 enum PointerAction {
     Next,
+    Skip,
     Jump(usize),
 }
 
 impl PointerAction {
     fn skip_or_next(condition: bool, addr: usize) -> PointerAction {
         if condition {
-            PointerAction::Jump(addr)
+            PointerAction::Skip
         } else {
             PointerAction::Next
         }
@@ -125,8 +126,8 @@ impl Cpu {
 
         let nnn = (opcode & 0x0FFF) as usize;
         let kk = (opcode & 0x00FF) as u8;
-        let x = nibbles.1;
-        let y = nibbles.2;
+        let x = nibbles.1 as usize;
+        let y = nibbles.2 as usize;
         let n = nibbles.3;
 
         println!("opcode: {:b}", opcode);
@@ -141,11 +142,17 @@ impl Cpu {
             (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(), // RET
             (0x01, _, _, _) => self.op_1nnn(nnn), // JP
             (0x02, _, _, _) => self.op_2nnn(nnn), // CALL
+            (0x03, _, _, _) => self.op_3xkk(x, kk), // SE Vx, byte
+            (0x04, _, _, _) => self.op_4xkk(x, kk), //SNE Vx, byte
+            (0x05, _, _, 0x00) => self.op_5xy0(x, y), //SE Vx, Vy
+            (0x06, _, _, _) => self.op_6xkk(x, kk), // LD Vx, byte
+            (0x07, _, _, _) => self.op_7xkk(x, kk), // ADD Vx, byte
             _ => PointerAction::Next
         };
 
         match pc_action {
             PointerAction::Next => self.pc += 2,
+            PointerAction::Skip => self.pc += 4,
             PointerAction::Jump(address) => self.pc = address,
         }
     }
@@ -185,8 +192,38 @@ impl Cpu {
     /// 3xkk - SE Vx, byte
     ///  Skip next instruction if Vx = kk.
     /// The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
-    fn op_3xkk(&mut self, x: u16, kk: u8) -> PointerAction {
-        PointerAction::skip_or_next((self.v[x] == kk), self.pc+2)
+    fn op_3xkk(&mut self, x: usize, kk: u8) -> PointerAction {
+        PointerAction::skip_or_next((self.v[x] == kk), self.pc)
+    }
+
+    ///SNE Vx, byte
+    /// Skip next instruction if Vx != kk.
+    ///The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
+    fn op_4xkk(&mut self, x: usize, kk: u8) -> PointerAction {
+        PointerAction::skip_or_next((self.v[x] != kk), self.pc)
+    }
+
+    /// SE Vx, Vy
+    /// Skip next instruction if Vx = Vy.
+    /// The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
+    fn op_5xy0(&mut self, x: usize, y: usize) -> PointerAction {
+        PointerAction::skip_or_next((self.v[x] == self.v[y]), self.pc)
+    }
+
+    /// LD Vx, byte
+    /// Set Vx = kk.
+    /// The interpreter puts the value kk into register Vx.
+    fn op_6xkk(&mut self, x: usize, kk: u8) -> PointerAction {
+        self.v[x] = kk;
+        PointerAction::Next
+    }
+
+    /// ADD Vx, byte
+    ///  Set Vx = Vx + kk.
+    ///  Adds the value kk to the value of register Vx, then stores the result in Vx.
+    fn op_7xkk(&mut self, x: usize, kk: u8) -> PointerAction {
+        self.v[x] = self.v[x] + kk;
+        PointerAction::Next
     }
 }
 

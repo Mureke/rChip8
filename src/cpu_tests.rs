@@ -1,5 +1,14 @@
 use super::*;
 
+const PC: usize = 0x200;
+
+fn new_cpu_with_inital_data()-> Cpu {
+    let mut cpu = Cpu::new();
+    cpu.pc = PC;
+    cpu.v = [0,0,1,1,3,4,5,6,7,8,4,4,2,1,3,4];
+    cpu
+}
+
 #[test]
 fn test_cpu_intialization() {
     let cpu = Cpu::new();
@@ -72,11 +81,51 @@ fn test_op2nnn() {
 // SE Vx, byte
 #[test]
 fn test_op3xkk() {
-    let mut cpu = Cpu::new();
-    cpu.sp = 0;
-    // TODO: Finish this
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x3003);
+    assert_eq!(cpu.pc, PC + 2);
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x3000);
+    assert_eq!(cpu.pc, PC + 4);
 }
 
+// SNE Vx, byte
+#[test]
+fn test_op4xkk() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x4003);
+    assert_eq!(cpu.pc, PC + 4);
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x4000);
+    assert_eq!(cpu.pc, PC + 2);
+}
+
+// SE Vx, Vy
+#[test]
+fn test_op5xy0() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x5020);
+    assert_eq!(cpu.pc, PC + 2);
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x5010);
+    assert_eq!(cpu.pc, PC + 4);
+}
+
+//  LD Vx, byte
+#[test]
+fn test_op6xkk() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x6415);
+    assert_eq!(cpu.v[4], 0x0015)
+}
+
+// ADD Vx, byte
+#[test]
+fn test_op7xkk() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x7315); // x = 3, kk = 21
+    assert_eq!(cpu.v[3], 0x0016) // v[3] = 22
+}
+
+
 // TODO: Write tests for opcodes and write opcode
-//
-// based on tests
