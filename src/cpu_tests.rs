@@ -9,6 +9,14 @@ fn new_cpu_with_inital_data()-> Cpu {
     cpu
 }
 
+
+fn set_register_values_and_run(mut cpu: Cpu, x: u8, y: u8, opcode: u16) -> Cpu {
+    cpu.v[0] = x;
+    cpu.v[1] = y;
+    cpu.run_opcode(opcode);
+    cpu
+}
+
 #[test]
 fn test_cpu_intialization() {
     let cpu = Cpu::new();
@@ -127,5 +135,62 @@ fn test_op7xkk() {
     assert_eq!(cpu.v[3], 0x0016) // v[3] = 22
 }
 
+//  LD Vx, Vy
+#[test]
+fn test_op8xy0() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x8350);
+    assert_eq!(cpu.v[3], 4)
+}
 
+//  OR Vx, Vy
+#[test]
+fn test_op8xy1() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x8351);
+    assert_eq!(cpu.v[3], 0x05)
+}
+
+//  AND Vx, Vy
+#[test]
+fn test_op8xy2() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x8562);
+    assert_eq!(cpu.v[5], 0x04)
+}
+
+//  XOR Vx, Vy
+#[test]
+fn test_op8xy3() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.run_opcode(0x8563);
+    assert_eq!(cpu.v[5], 0x01)
+}
+
+//  ADD Vx, Vy
+#[test]
+fn test_op8xy4() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 255, 0x8014);
+    assert_eq!(cpu.v[0x0F], 1);
+    assert_eq!(cpu.v[0x00], 0);
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 2, 0x8014);
+    assert_eq!(cpu.v[0x0F], 0);
+    assert_eq!(cpu.v[0x00], 0x03);
+}
+
+//  SUB Vx, Vy
+#[test]
+fn test_op8xy5() {
+    // TODO: not working
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 255, 0x8015);
+    assert_eq!(cpu.v[0x0F], 1);
+    assert_eq!(cpu.v[0x00], 0);
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 2, 0x8015);
+    assert_eq!(cpu.v[0x0F], 0);
+    assert_eq!(cpu.v[0x00], 0x03);
+}
 // TODO: Write tests for opcodes and write opcode

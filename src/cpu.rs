@@ -147,6 +147,12 @@ impl Cpu {
             (0x05, _, _, 0x00) => self.op_5xy0(x, y), //SE Vx, Vy
             (0x06, _, _, _) => self.op_6xkk(x, kk), // LD Vx, byte
             (0x07, _, _, _) => self.op_7xkk(x, kk), // ADD Vx, byte
+            (0x08, _, _, 0x00) => self.op_8xy0(x, y), // LD Vx, Vy
+            (0x08, _, _, 0x01) => self.op_8xy1(x, y), // OR Vx, Vy
+            (0x08, _, _, 0x02) => self.op_8xy2(x, y), // AND Vx, Vy
+            (0x08, _, _, 0x03) => self.op_8xy3(x, y), // XOR Vx, Vy
+            (0x08, _, _, 0x04) => self.op_8xy4(x, y), // ADD Vx, Vy
+            (0x08, _, _, 0x05) => self.op_8xy5(x, y), // SUB Vx, Vy
             _ => PointerAction::Next
         };
 
@@ -223,6 +229,70 @@ impl Cpu {
     ///  Adds the value kk to the value of register Vx, then stores the result in Vx.
     fn op_7xkk(&mut self, x: usize, kk: u8) -> PointerAction {
         self.v[x] = self.v[x] + kk;
+        PointerAction::Next
+    }
+
+    /// LD Vx, Vy
+    /// Set Vx = Vy.
+    ///  Stores the value of register Vy in register Vx.
+    fn op_8xy0(&mut self, x: usize, y: usize) -> PointerAction {
+        self.v[x] = self.v[y];
+        PointerAction::Next
+    }
+
+    /// OR Vx, Vy
+    ///  Set Vx = Vx OR Vy.
+    ///  Performs a bitwise OR on the values of Vx and Vy,
+    /// then stores the result in Vx. A bitwise OR compares the corrseponding bits from two values, and if either bit is 1, then the same bit in the result is also 1. Otherwise, it is 0.
+    fn op_8xy1(&mut self, x: usize, y: usize) -> PointerAction {
+        let value = self.v[x] | self.v[y];
+        self.v[x] = value;
+        PointerAction::Next
+    }
+
+    /// AND Vx, Vy
+    ///  Set Vx = Vx AND Vy.
+    ///  Performs a bitwise AND on the values of Vx and Vy,
+    /// then stores the result in Vx. A bitwise AND compares the
+    /// corrseponding bits from two values, and if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
+    fn op_8xy2(&mut self, x: usize, y: usize) -> PointerAction {
+        let value = self.v[x] & self.v[y];
+        self.v[x] = value;
+        PointerAction::Next
+    }
+
+    /// XOR Vx, Vy
+    ///  Set Vx = Vx XOR Vy.
+    ///  Performs a bitwise exclusive OR on the values of Vx and Vy,
+    /// then stores the result in Vx. An exclusive OR compares the
+    /// corrseponding bits from two values, and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0.
+    fn op_8xy3(&mut self, x: usize, y: usize) -> PointerAction {
+        let value = self.v[x] ^ self.v[y];
+        self.v[x] = value;
+        PointerAction::Next
+    }
+
+   /// ADD Vx, Vy
+   ///  Set Vx = Vx + Vy, set VF = carry.
+   ///  The values of Vx and Vy are added together. If the result is greater
+   /// than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
+    fn op_8xy4(&mut self, x: usize, y: usize) -> PointerAction {
+        let value = self.v[x] as u16 + self.v[y] as u16;
+        if value > 0xFF {
+            self.v[0x0F] = 1;
+        } else {
+            self.v[0x0F] = 0;
+        }
+        self.v[x] = value as u8;
+        PointerAction::Next
+    }
+
+    /// SUB Vx, Vy
+    /// Set Vx = Vx - Vy, set VF = NOT borrow.
+    /// If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
+    fn op_8xy5(&mut self, x: usize, y: usize) -> PointerAction {
+        self.v[0x0F] = if self.v[x] > self.v[y] {1} else {0};
+        self.v[x] = self.v[x] - self.v[y];
         PointerAction::Next
     }
 }
