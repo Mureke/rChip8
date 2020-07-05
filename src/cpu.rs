@@ -130,13 +130,6 @@ impl Cpu {
         let y = nibbles.2 as usize;
         let n = nibbles.3;
 
-        println!("opcode: {:b}", opcode);
-        println!("nnn: {:b}", nnn);
-        println!("kk: {:b}", kk);
-        println!("x: {:b}", x);
-        println!("y: {:b}", y);
-        println!("n: {:b}", n);
-
         let pc_action = match (nibbles) {
             (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(), // CLS
             (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(), // RET
@@ -153,6 +146,8 @@ impl Cpu {
             (0x08, _, _, 0x03) => self.op_8xy3(x, y), // XOR Vx, Vy
             (0x08, _, _, 0x04) => self.op_8xy4(x, y), // ADD Vx, Vy
             (0x08, _, _, 0x05) => self.op_8xy5(x, y), // SUB Vx, Vy
+            (0x08, _, _, 0x06) => self.op_8xy6(x), // SHR Vx {, Vy}
+            (0x08, _, _, 0x07) => self.op_8xy7(x, y), // SHR Vx {, Vy}
             _ => PointerAction::Next
         };
 
@@ -292,7 +287,25 @@ impl Cpu {
     /// If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
     fn op_8xy5(&mut self, x: usize, y: usize) -> PointerAction {
         self.v[0x0F] = if self.v[x] > self.v[y] {1} else {0};
-        self.v[x] = self.v[x] - self.v[y];
+        self.v[x] = self.v[x].wrapping_sub(self.v[y]);
+        PointerAction::Next
+    }
+
+    /// SHR Vx {, Vy}
+    ///  Set Vx = Vx SHR 1.
+    ///  If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
+    fn op_8xy6(&mut self, x: usize) -> PointerAction {
+        self.v[0x0F] = if self.v[x] & 1 == 1 {1} else {0};
+        self.v[x] = self.v[x] / 2;
+        PointerAction::Next
+    }
+
+    /// SUBN Vx, Vy
+    ///  Set Vx = Vy - Vx, set VF = NOT borrow.
+    ///  If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
+    fn op_8xy7(&mut self, x: usize, y: usize) -> PointerAction {
+        self.v[0x0F] = if self.v[x] < self.v[y] {1} else {0};
+        self.v[x] = self.v[y].wrapping_sub(self.v[x]);
         PointerAction::Next
     }
 }

@@ -183,14 +183,39 @@ fn test_op8xy4() {
 //  SUB Vx, Vy
 #[test]
 fn test_op8xy5() {
-    // TODO: not working
     let mut cpu = new_cpu_with_inital_data();
-    cpu = set_register_values_and_run(cpu, 1, 255, 0x8015);
+    cpu = set_register_values_and_run(cpu, 6, 2, 0x8015);
     assert_eq!(cpu.v[0x0F], 1);
-    assert_eq!(cpu.v[0x00], 0);
+    assert_eq!(cpu.v[0x00], 0x04);
     let mut cpu = new_cpu_with_inital_data();
-    cpu = set_register_values_and_run(cpu, 1, 2, 0x8015);
+    cpu = set_register_values_and_run(cpu, 3, 3, 0x8015);
     assert_eq!(cpu.v[0x0F], 0);
-    assert_eq!(cpu.v[0x00], 0x03);
+    assert_eq!(cpu.v[0x00], 0x00);
+}
+
+// SHR Vx {, Vy}
+#[test]
+fn test_op8xy6() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 2, 0x8016);
+    assert_eq!(cpu.v[0x0F], 1);
+    assert_eq!(cpu.v[0x00], 0x00);
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 2, 3, 0x8016);
+    assert_eq!(cpu.v[0x0F], 0);
+    assert_eq!(cpu.v[0x00], 0x01);
+}
+
+// SHR Vx {, Vy}
+#[test]
+fn test_op8xy7() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 2, 0x8017);
+    assert_eq!(cpu.v[0x0F], 1);
+    assert_eq!(cpu.v[0x00], 0x01);
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 255, 15, 0x8017);
+    assert_eq!(cpu.v[0x0F], 0);
+    assert_eq!(cpu.v[0x00], 0x10);
 }
 // TODO: Write tests for opcodes and write opcode
