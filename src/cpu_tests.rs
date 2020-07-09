@@ -218,4 +218,46 @@ fn test_op8xy7() {
     assert_eq!(cpu.v[0x0F], 0);
     assert_eq!(cpu.v[0x00], 0x10);
 }
+
+// SHL Vx {, Vy}
+#[test]
+fn test_op8xye() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 128, 2, 0x801E);
+    assert_eq!(cpu.v[0x0F], 1);
+    assert_eq!(cpu.v[0x00], 0);
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 40, 15, 0x801E);
+    assert_eq!(cpu.v[0x0F], 0);
+    assert_eq!(cpu.v[0x00], 80);
+}
+
+// SNE Vx, Vy
+#[test]
+fn test_op9xy0() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 1, 0x9010);
+    assert_eq!(cpu.pc, PC+2);
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 2, 0x9010);
+    assert_eq!(cpu.pc, PC+4);
+
+}
+
+// LD I, addr
+#[test]
+fn test_annn() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 1, 0xAFFF);
+    assert_eq!(cpu.i, 0xFFF);
+}
+
+// JP V0, addr
+#[test]
+fn test_bnnn() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 4, 1, 0xB001);
+    assert_eq!(cpu.pc, 0x05);
+}
+
 // TODO: Write tests for opcodes and write opcode

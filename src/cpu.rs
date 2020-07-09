@@ -16,7 +16,7 @@ enum PointerAction {
 }
 
 impl PointerAction {
-    fn skip_or_next(condition: bool, addr: usize) -> PointerAction {
+    fn skip_or_next(condition: bool) -> PointerAction {
         if condition {
             PointerAction::Skip
         } else {
@@ -147,7 +147,11 @@ impl Cpu {
             (0x08, _, _, 0x04) => self.op_8xy4(x, y), // ADD Vx, Vy
             (0x08, _, _, 0x05) => self.op_8xy5(x, y), // SUB Vx, Vy
             (0x08, _, _, 0x06) => self.op_8xy6(x), // SHR Vx {, Vy}
-            (0x08, _, _, 0x07) => self.op_8xy7(x, y), // SHR Vx {, Vy}
+            (0x08, _, _, 0x07) => self.op_8xy7(x, y), //  SUBN Vx, Vy
+            (0x08, _, _, 0x0E) => self.op_8xye(x), // SHL Vx {, Vy}
+            (0x09, _, _, 0x00) => self.op_9xy0(x, y), // SNE Vx, Vy
+            (0x0A, _, _, _) => self.op_annn(nnn), // LD I, addr
+            (0x0B, _, _, _) => self.op_bnnn(nnn), // JP V0, addr
             _ => PointerAction::Next
         };
 
@@ -194,21 +198,21 @@ impl Cpu {
     ///  Skip next instruction if Vx = kk.
     /// The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
     fn op_3xkk(&mut self, x: usize, kk: u8) -> PointerAction {
-        PointerAction::skip_or_next((self.v[x] == kk), self.pc)
+        PointerAction::skip_or_next((self.v[x] == kk))
     }
 
     ///SNE Vx, byte
     /// Skip next instruction if Vx != kk.
     ///The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
     fn op_4xkk(&mut self, x: usize, kk: u8) -> PointerAction {
-        PointerAction::skip_or_next((self.v[x] != kk), self.pc)
+        PointerAction::skip_or_next((self.v[x] != kk))
     }
 
     /// SE Vx, Vy
     /// Skip next instruction if Vx = Vy.
     /// The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
     fn op_5xy0(&mut self, x: usize, y: usize) -> PointerAction {
-        PointerAction::skip_or_next((self.v[x] == self.v[y]), self.pc)
+        PointerAction::skip_or_next((self.v[x] == self.v[y]))
     }
 
     /// LD Vx, byte
@@ -267,10 +271,10 @@ impl Cpu {
         PointerAction::Next
     }
 
-   /// ADD Vx, Vy
-   ///  Set Vx = Vx + Vy, set VF = carry.
-   ///  The values of Vx and Vy are added together. If the result is greater
-   /// than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
+    /// ADD Vx, Vy
+    ///  Set Vx = Vx + Vy, set VF = carry.
+    ///  The values of Vx and Vy are added together. If the result is greater
+    /// than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
     fn op_8xy4(&mut self, x: usize, y: usize) -> PointerAction {
         let value = self.v[x] as u16 + self.v[y] as u16;
         if value > 0xFF {
@@ -286,7 +290,7 @@ impl Cpu {
     /// Set Vx = Vx - Vy, set VF = NOT borrow.
     /// If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
     fn op_8xy5(&mut self, x: usize, y: usize) -> PointerAction {
-        self.v[0x0F] = if self.v[x] > self.v[y] {1} else {0};
+        self.v[0x0F] = if self.v[x] > self.v[y] { 1 } else { 0 };
         self.v[x] = self.v[x].wrapping_sub(self.v[y]);
         PointerAction::Next
     }
@@ -295,8 +299,8 @@ impl Cpu {
     ///  Set Vx = Vx SHR 1.
     ///  If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
     fn op_8xy6(&mut self, x: usize) -> PointerAction {
-        self.v[0x0F] = if self.v[x] & 1 == 1 {1} else {0};
-        self.v[x] = self.v[x] / 2;
+        self.v[0x0F] = if self.v[x] & 1 == 1 { 1 } else { 0 };
+        self.v[x] >>= 1;
         PointerAction::Next
     }
 
@@ -304,9 +308,38 @@ impl Cpu {
     ///  Set Vx = Vy - Vx, set VF = NOT borrow.
     ///  If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
     fn op_8xy7(&mut self, x: usize, y: usize) -> PointerAction {
-        self.v[0x0F] = if self.v[x] < self.v[y] {1} else {0};
+        self.v[0x0F] = if self.v[x] < self.v[y] { 1 } else { 0 };
         self.v[x] = self.v[y].wrapping_sub(self.v[x]);
         PointerAction::Next
+    }
+
+    /// SHL Vx {, Vy}
+    ///  Set Vx = Vx SHL 1.
+    ///  If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
+    fn op_8xye(&mut self, x: usize) -> PointerAction {
+        self.v[0x0F] = (self.v[x] & 0b10000000) >> 7;
+        self.v[x] <<= 1;
+        PointerAction::Next
+    }
+
+    /// SNE Vx, Vy
+    ///  Skip next instruction if Vx != Vy.
+    ///  The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
+    fn op_9xy0(&mut self, x: usize, y: usize) -> PointerAction {
+        PointerAction::skip_or_next((self.v[x] != self.v[y]))
+    }
+
+    /// LD I, addr
+    /// Set I = nnn.
+    fn op_annn(&mut self, nnn: usize) -> PointerAction {
+        self.i = nnn;
+        PointerAction::Next
+    }
+
+    /// JP V0, addr
+    ///  Jump to location nnn + V0.
+    fn op_bnnn(&mut self, nnn: usize) -> PointerAction {
+        PointerAction::Jump((nnn as u8 + self.v[0x00]) as usize)
     }
 }
 
