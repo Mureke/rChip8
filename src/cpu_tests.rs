@@ -260,4 +260,13 @@ fn test_bnnn() {
     assert_eq!(cpu.pc, 0x05);
 }
 
+// RND Vx, byte
+// Not sure how to test this since it generates random numbers but will test that pc is corect
+#[test]
+fn test_cxkk() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 4, 1, 0xC001);
+    assert_eq!(cpu.pc, PC+0x002);
+}
+
 // TODO: Write tests for opcodes and write opcode

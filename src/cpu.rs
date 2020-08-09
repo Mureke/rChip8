@@ -2,6 +2,7 @@ use crate::font_set::FONT_SET;
 use crate::utils::RomReader;
 use std::process::exit;
 use sdl2::hint::set;
+use rand::Rng;
 
 pub struct CycleState<'a> {
     pub vram_changed: bool,
@@ -152,6 +153,8 @@ impl Cpu {
             (0x09, _, _, 0x00) => self.op_9xy0(x, y), // SNE Vx, Vy
             (0x0A, _, _, _) => self.op_annn(nnn), // LD I, addr
             (0x0B, _, _, _) => self.op_bnnn(nnn), // JP V0, addr
+            (0x0C, _, _, _) => self.op_cxkk(x, kk), // RND Vx, byte
+            (0x0D, _, _, _) => self.op_dxyn(x, y, n), // RND Vx, byte
             _ => PointerAction::Next
         };
 
@@ -340,6 +343,21 @@ impl Cpu {
     ///  Jump to location nnn + V0.
     fn op_bnnn(&mut self, nnn: usize) -> PointerAction {
         PointerAction::Jump((nnn as u8 + self.v[0x00]) as usize)
+    }
+
+    /// RND Vx, byte
+    /// Set Vx = random byte AND kk.
+    fn op_cxkk(&mut self, x: usize, kk: u8) -> PointerAction {
+        let mut rng = rand::thread_rng();
+        let random_number = rng.gen_range(0, 255);
+        self.v[x] = random_number & kk;
+        PointerAction::Next
+    }
+
+    /// DRW Vx, Vy, nibble
+    ///  Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+    fn op_dxyn(&mut self, x: usize, y: usize, n: u16) -> PointerAction {
+        PointerAction::Next
     }
 }
 
