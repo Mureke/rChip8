@@ -2,10 +2,10 @@ use super::*;
 
 const PC: usize = 0x200;
 
-fn new_cpu_with_inital_data()-> Cpu {
+fn new_cpu_with_inital_data() -> Cpu {
     let mut cpu = Cpu::new();
     cpu.pc = PC;
-    cpu.v = [0,0,1,1,3,4,5,6,7,8,4,4,2,1,3,4];
+    cpu.v = [0, 0, 1, 1, 3, 4, 5, 6, 7, 8, 4, 4, 2, 1, 3, 4];
     cpu
 }
 
@@ -39,6 +39,17 @@ fn test_load_data() {
     assert_eq!(cpu.memory[mempointer + 2], 33);
     assert_eq!(cpu.memory[mempointer + 3], 43);
 }
+
+#[test]
+fn test_delay_and_sound_timer() {
+    let mut cpu = Cpu::new();
+    cpu.sound_timer = 10;
+    cpu.delay_timer = 10;
+    cpu.cycle();
+    assert_eq!(cpu.sound_timer, 9);
+    assert_eq!(cpu.delay_timer, 9);
+}
+
 
 // CLS = Clear the display
 #[test]
@@ -237,11 +248,10 @@ fn test_op8xye() {
 fn test_op9xy0() {
     let mut cpu = new_cpu_with_inital_data();
     cpu = set_register_values_and_run(cpu, 1, 1, 0x9010);
-    assert_eq!(cpu.pc, PC+2);
+    assert_eq!(cpu.pc, PC + 2);
     let mut cpu = new_cpu_with_inital_data();
     cpu = set_register_values_and_run(cpu, 1, 2, 0x9010);
-    assert_eq!(cpu.pc, PC+4);
-
+    assert_eq!(cpu.pc, PC + 4);
 }
 
 // LD I, addr
@@ -266,7 +276,88 @@ fn test_bnnn() {
 fn test_cxkk() {
     let mut cpu = new_cpu_with_inital_data();
     cpu = set_register_values_and_run(cpu, 4, 1, 0xC001);
-    assert_eq!(cpu.pc, PC+0x002);
+    assert_eq!(cpu.pc, PC + 0x002);
+}
+
+#[test]
+fn test_dxyn() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.i = 0;
+    cpu.memory[0] = 0b11111111;
+    cpu.memory[1] = 0b00000000;
+    cpu.vram[0][0] = 1;
+    cpu.vram[0][1] = 0;
+    cpu.vram[1][0] = 1;
+    cpu.vram[1][1] = 0;
+    cpu.v[0] = 0;
+    cpu = set_register_values_and_run(cpu, 0, 1, 0xd002);
+
+    assert_eq!(cpu.vram[0][0], 0);
+    assert_eq!(cpu.vram[0][1], 1);
+    assert_eq!(cpu.vram[1][0], 1);
+    assert_eq!(cpu.vram[1][1], 0);
+    assert_eq!(cpu.v[0x0f], 1);
+    assert!(cpu.vram_changed);
+    assert_eq!(cpu.pc, PC + 2);
+}
+
+#[test]
+fn test_ex9e() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.keys[4] = true;
+    cpu.v[2] = 4;
+    cpu = set_register_values_and_run(cpu, 2, 0, 0xe29e);
+    assert_eq!(cpu.pc, PC + 4);
+
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.keys[5] = false;
+    cpu.v[2] = 4;
+    cpu = set_register_values_and_run(cpu, 2, 0, 0xe29e);
+    assert_eq!(cpu.pc, PC + 2);
+}
+
+#[test]
+fn test_exa1() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.keys[4] = true;
+    cpu.v[2] = 4;
+    cpu = set_register_values_and_run(cpu, 2, 0, 0xe2A1);
+    assert_eq!(cpu.pc, PC + 2);
+
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.keys[5] = false;
+    cpu.v[2] = 4;
+    cpu = set_register_values_and_run(cpu, 2, 0, 0xe2A1);
+    assert_eq!(cpu.pc, PC + 4);
+}
+
+#[test]
+fn test_fx07() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 6, 0xf107);
+
+    assert_eq!(cpu.delay_timer, 6);
+    assert_eq!(cpu.pc, PC + 2);
+}
+
+#[test]
+fn test_fx0a() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 6, 0xf10A);
+
+    assert_eq!(cpu.wait_for_input, true);
+    assert_eq!(cpu.input_address, 1);
+    assert_eq!(cpu.pc, PC + 2);
+
+    cpu.cycle();
+    assert_eq!(cpu.wait_for_input, true);
+    assert_eq!(cpu.input_address, 1);
+
+    cpu.keys[0] = true;
+
+    cpu.cycle();
+    assert_eq!(cpu.wait_for_input, false);
+    assert_eq!(cpu.v[0x01], 0);
 }
 
 // TODO: Write tests for opcodes and write opcode

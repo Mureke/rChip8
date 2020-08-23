@@ -3,6 +3,7 @@ use crate::utils::RomReader;
 use std::process::exit;
 use sdl2::hint::set;
 use rand::Rng;
+use sdl2::rect::Point;
 
 pub struct CycleState<'a> {
     pub vram_changed: bool,
@@ -48,7 +49,8 @@ pub struct Cpu {
     stack: [usize; 16],
     sp: usize,
     keys: [bool; 16],
-    keys_updated: bool,
+    wait_for_input: bool,
+    input_address: usize, // Stores address where opcode test_fx0a should store value after keypad is pressed
 }
 
 impl Cpu {
@@ -71,7 +73,8 @@ impl Cpu {
             stack: [0; 16],
             sp: 0,
             keys: [false; 16],
-            keys_updated: false,
+            wait_for_input: false,
+            input_address: 0,
         }
     }
 
@@ -88,19 +91,30 @@ impl Cpu {
 
     pub fn cycle(&mut self) -> CycleState {
         self.vram_changed = false;
-        let opcode = self.fetch_and_decode_opcode(); // Decode opcode and set to self.opcode
-        self.run_opcode(opcode);
-
-        let cycle_state = CycleState {
-            vram_changed: self.vram_changed,
-            vram: &self.vram,
-            sound: self.sound_timer > 0,
-        };
-        if self.sound_timer == 1 {
-            self.sound_timer = 0;
+        if self.wait_for_input {
+            for i in 0..self.keys.len() {
+                if self.keys[i] {
+                    self.wait_for_input = false;
+                    self.v[self.input_address] = i as u8;
+                    break;
+                }
+            }
+        } else {
+            if self.sound_timer > 0 {
+                self.sound_timer -=1
+            }
+            if self.delay_timer > 0 {
+                self.delay_timer -= 1
+            }
+            let opcode = self.fetch_and_decode_opcode(); // Decode opcode and set to self.opcode
+            self.run_opcode(opcode);
         }
 
-        cycle_state
+        CycleState {
+            vram_changed: self.vram_changed,
+            vram: &self.vram,
+            sound: self.sound_timer > 0
+        }
     }
 
     /// Fetch and decode opcodes
@@ -129,7 +143,7 @@ impl Cpu {
         let kk = (opcode & 0x00FF) as u8;
         let x = nibbles.1 as usize;
         let y = nibbles.2 as usize;
-        let n = nibbles.3;
+        let n = nibbles.3 as usize;
 
         let pc_action = match (nibbles) {
             (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(), // CLS
@@ -154,7 +168,11 @@ impl Cpu {
             (0x0A, _, _, _) => self.op_annn(nnn), // LD I, addr
             (0x0B, _, _, _) => self.op_bnnn(nnn), // JP V0, addr
             (0x0C, _, _, _) => self.op_cxkk(x, kk), // RND Vx, byte
-            (0x0D, _, _, _) => self.op_dxyn(x, y, n), // RND Vx, byte
+            (0x0D, _, _, _) => self.op_dxyn(x, y, n), //  DRW Vx, Vy, nibble
+            (0x0E, _, 0x09, 0x0E) => self.op_ex9e(x), // SKP Vx
+            (0x0E, _, 0x0A, 0x01) => self.op_exa1(x), // SKNP Vx
+            (0x0f, _, 0x00, 0x07) => self.op_fx07(x), // LD Vx, DT
+            (0x0f, _, 0x00, 0x0A) => self.op_fx0a(x), // LD Vx, K
             _ => PointerAction::Next
         };
 
@@ -356,9 +374,49 @@ impl Cpu {
 
     /// DRW Vx, Vy, nibble
     ///  Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
-    fn op_dxyn(&mut self, x: usize, y: usize, n: u16) -> PointerAction {
+    fn op_dxyn(&mut self, x: usize, y: usize, n: usize) -> PointerAction {
+        self.v[0x0F] = 0;
+
+        for byte in 0..n {
+            let y = (self.v[y] as usize + byte) % 32;
+            for bit in 0..8 {
+                let x = (self.v[x] as usize + bit) % 32;
+                let color = (self.memory[self.i + byte] >> (7 - bit as u8)) & 1;
+                self.v[0x0f] |= color & self.vram[y][x];
+                self.vram[y][x] ^= color;
+            }
+        }
+        self.vram_changed = true;
         PointerAction::Next
     }
+
+    ///  Ex9E - SKP Vx
+    ///  Skip next instruction if key with the value of Vx is pressed.
+    fn op_ex9e(&mut self, x: usize) -> PointerAction {
+        PointerAction::skip_or_next(self.keys[self.v[x] as usize])
+    }
+
+    /// ExA1 - SKNP Vx
+    /// Skip next instruction if key with the value of Vx is not pressed.
+    fn op_exa1(&mut self, x: usize) -> PointerAction {
+        PointerAction::skip_or_next(!self.keys[self.v[x] as usize])
+    }
+
+    /// LD Vx, DT
+    /// Set Vx = delay timer value.
+    fn op_fx07(&mut self, x: usize) -> PointerAction {
+        self.delay_timer = self.v[x];
+        PointerAction::Next
+    }
+
+    /// LD Vx, K
+    ///  Wait for a key press, store the value of the key in Vx.
+    fn op_fx0a(&mut self, x: usize) -> PointerAction {
+        self.wait_for_input = true;
+        self.input_address = x;
+        PointerAction::Next
+    }
+
 }
 
 #[cfg(test)]
