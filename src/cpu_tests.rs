@@ -334,9 +334,9 @@ fn test_exa1() {
 #[test]
 fn test_fx07() {
     let mut cpu = new_cpu_with_inital_data();
-    cpu = set_register_values_and_run(cpu, 1, 6, 0xf107);
-
-    assert_eq!(cpu.delay_timer, 6);
+    cpu.delay_timer = 6;
+    cpu = set_register_values_and_run(cpu, 1, 0, 0xf107);
+    assert_eq!(cpu.v[1], 6);
     assert_eq!(cpu.pc, PC + 2);
 }
 
@@ -358,6 +358,31 @@ fn test_fx0a() {
     cpu.cycle();
     assert_eq!(cpu.wait_for_input, false);
     assert_eq!(cpu.v[0x01], 0);
+}
+
+#[test]
+fn test_fx15() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 6, 0xf115);
+    assert_eq!(cpu.delay_timer, 6);
+    assert_eq!(cpu.pc, PC + 2);
+}
+
+#[test]
+fn test_fx18() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu = set_register_values_and_run(cpu, 1, 6, 0xf118);
+    assert_eq!(cpu.sound_timer, 6);
+    assert_eq!(cpu.pc, PC + 2);
+}
+
+#[test]
+fn test_fx1e() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.i = 10;
+    cpu = set_register_values_and_run(cpu, 1, 6, 0xf11e);
+    assert_eq!(cpu.i, 16);
+    assert_eq!(cpu.pc, PC + 2);
 }
 
 // TODO: Write tests for opcodes and write opcode

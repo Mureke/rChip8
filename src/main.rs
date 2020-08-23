@@ -40,7 +40,7 @@ fn main() {
     processor.read_data_to_memory(&rom.data);
 
     // Main loop.
-    while let Ok(event) = event_handler.event_poller() {
+    while let Ok(_) = event_handler.event_poller() {
         let cycle_state = processor.cycle();
         if cycle_state.vram_changed {
             display.draw(cycle_state.vram);
@@ -52,6 +52,8 @@ fn main() {
         } else {
             audio.stop_audio()
         }
+
+        thread::sleep(time::Duration::from_millis(1))
     }
     exit(0)
 

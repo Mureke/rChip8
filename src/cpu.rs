@@ -125,9 +125,6 @@ impl Cpu {
         let byte2 = self.memory[self.pc + 1] as u16;
         self.opcode = byte1 | byte2;
 
-        println!("{:b}", byte1);
-        println!("0000000{:b}", byte2);
-        println!("{:b}", self.opcode);
         self.opcode
     }
 
@@ -173,6 +170,9 @@ impl Cpu {
             (0x0E, _, 0x0A, 0x01) => self.op_exa1(x), // SKNP Vx
             (0x0f, _, 0x00, 0x07) => self.op_fx07(x), // LD Vx, DT
             (0x0f, _, 0x00, 0x0A) => self.op_fx0a(x), // LD Vx, K
+            (0x0f, _, 0x01, 0x05) => self.op_fx15(x), // LD DT, Vx
+            (0x0f, _, 0x01, 0x08) => self.op_fx18(x), // LD ST, Vx
+            (0x0f, _, 0x01, 0x0E) => self.op_fx1e(x), // ADD I, Vx
             _ => PointerAction::Next
         };
 
@@ -405,7 +405,7 @@ impl Cpu {
     /// LD Vx, DT
     /// Set Vx = delay timer value.
     fn op_fx07(&mut self, x: usize) -> PointerAction {
-        self.delay_timer = self.v[x];
+        self.v[x] = self.delay_timer;
         PointerAction::Next
     }
 
@@ -414,6 +414,27 @@ impl Cpu {
     fn op_fx0a(&mut self, x: usize) -> PointerAction {
         self.wait_for_input = true;
         self.input_address = x;
+        PointerAction::Next
+    }
+
+    /// LD DT, Vx
+    /// Set delay timer = Vx.
+    fn op_fx15(&mut self, x: usize) -> PointerAction {
+        self.delay_timer = self.v[x];
+        PointerAction::Next
+    }
+
+    /// LD ST, Vx
+    /// Set delay timer = Vx.
+    fn op_fx18(&mut self, x: usize) -> PointerAction {
+        self.sound_timer = self.v[x];
+        PointerAction::Next
+    }
+
+    /// ADD I, Vx
+    /// Set I = i + v[x]
+    fn op_fx1e(&mut self, x: usize) -> PointerAction{
+        self.i += self.v[x] as usize;
         PointerAction::Next
     }
 

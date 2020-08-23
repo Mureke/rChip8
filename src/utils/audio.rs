@@ -53,7 +53,7 @@ impl AudioCallback for SquareWave {
         // Generate a square wave
         for x in out.iter_mut() {
             *x = match self.phase {
-                0.0..=0.5 => self.volume,
+                0.0..= 0.5 =>self.volume,
                 _ => -self.volume
             };
             self.phase = (self.phase + self.phase_inc) % 1.0;
