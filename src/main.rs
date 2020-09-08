@@ -53,7 +53,7 @@ fn main() {
             audio.stop_audio()
         }
 
-        thread::sleep(time::Duration::from_millis(1))
+        thread::sleep(time::Duration::from_millis(2))
     }
     exit(0)
 

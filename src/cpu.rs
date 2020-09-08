@@ -172,7 +172,11 @@ impl Cpu {
             (0x0f, _, 0x00, 0x0A) => self.op_fx0a(x), // LD Vx, K
             (0x0f, _, 0x01, 0x05) => self.op_fx15(x), // LD DT, Vx
             (0x0f, _, 0x01, 0x08) => self.op_fx18(x), // LD ST, Vx
-            (0x0f, _, 0x01, 0x0E) => self.op_fx1e(x), // ADD I, Vx
+            (0x0f, _, 0x01, 0x0E) => self.op_fx1e(x), // ADD I, Vx,
+            (0x0f, _, 0x02, 0x09) => self.op_fx29(x),
+            (0x0f, _, 0x03, 0x03) => self.op_fx33(x),
+            (0x0f, _, 0x05, 0x05) => self.op_fx55(x),
+            (0x0f, _, 0x06, 0x05) => self.op_fx65(x),
             _ => PointerAction::Next
         };
 
@@ -210,7 +214,7 @@ impl Cpu {
     /// The interpreter increments the stack pointer,
     /// then puts the current PC on the top of the stack. The PC is then set to nnn.
     fn op_2nnn(&mut self, nnn: usize) -> PointerAction {
-        self.stack[self.sp] = self.pc;
+        self.stack[self.sp] = self.pc + 2;
         self.sp += 1;
         PointerAction::Jump(nnn)
     }
@@ -248,6 +252,7 @@ impl Cpu {
     ///  Set Vx = Vx + kk.
     ///  Adds the value kk to the value of register Vx, then stores the result in Vx.
     fn op_7xkk(&mut self, x: usize, kk: u8) -> PointerAction {
+        // TODO: Not implemented correctly
         self.v[x] = self.v[x] + kk;
         PointerAction::Next
     }
@@ -297,6 +302,7 @@ impl Cpu {
     ///  The values of Vx and Vy are added together. If the result is greater
     /// than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
     fn op_8xy4(&mut self, x: usize, y: usize) -> PointerAction {
+        // TODO: Validate this
         let value = self.v[x] as u16 + self.v[y] as u16;
         if value > 0xFF {
             self.v[0x0F] = 1;
@@ -366,6 +372,7 @@ impl Cpu {
     /// RND Vx, byte
     /// Set Vx = random byte AND kk.
     fn op_cxkk(&mut self, x: usize, kk: u8) -> PointerAction {
+        // TODO: Validate
         let mut rng = rand::thread_rng();
         let random_number = rng.gen_range(0, 255);
         self.v[x] = random_number & kk;
@@ -375,12 +382,14 @@ impl Cpu {
     /// DRW Vx, Vy, nibble
     ///  Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
     fn op_dxyn(&mut self, x: usize, y: usize, n: usize) -> PointerAction {
+        // TODO: Validate
+
         self.v[0x0F] = 0;
 
         for byte in 0..n {
-            let y = (self.v[y] as usize + byte) % 32;
+            let y = (self.v[y] as usize + byte) % 64;
             for bit in 0..8 {
-                let x = (self.v[x] as usize + bit) % 32;
+                let x = (self.v[x] as usize + bit) % 64;
                 let color = (self.memory[self.i + byte] >> (7 - bit as u8)) & 1;
                 self.v[0x0f] |= color & self.vram[y][x];
                 self.vram[y][x] ^= color;
@@ -434,7 +443,40 @@ impl Cpu {
     /// ADD I, Vx
     /// Set I = i + v[x]
     fn op_fx1e(&mut self, x: usize) -> PointerAction{
+        // TODO: Validate
         self.i += self.v[x] as usize;
+        PointerAction::Next
+    }
+
+    /// LD F, Vx
+    /// Set I = location of sprite for digit Vx.
+    fn op_fx29(&mut self, x: usize) -> PointerAction {
+
+        PointerAction::Next
+    }
+
+    /// LD B, Vx
+    /// The interpreter takes the decimal value of Vx, and places
+    /// the hundreds digit in memory at location in I, the tens digit
+    /// at location I+1, and the ones digit at location I+2.
+    fn op_fx33(&mut self, x: usize) -> PointerAction {
+
+        PointerAction::Next
+    }
+
+    /// LD [I], Vx
+    /// The interpreter copies the values of registers V0 through Vx
+    /// into memory, starting at the address in I.
+    fn op_fx55(&mut self, x: usize) -> PointerAction {
+
+        PointerAction::Next
+    }
+
+    /// LD Vx, [I]
+    /// The interpreter reads values from memory starting at location
+    /// I into registers V0 through Vx.
+    fn op_fx65(&mut self, x: usize) -> PointerAction {
+
         PointerAction::Next
     }
 
