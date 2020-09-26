@@ -142,7 +142,7 @@ impl Cpu {
         let y = nibbles.2 as usize;
         let n = nibbles.3 as usize;
 
-        let pc_action = match (nibbles) {
+        let pc_action = match nibbles {
             (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(), // CLS
             (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(), // RET
             (0x01, _, _, _) => self.op_1nnn(nnn), // JP
@@ -390,9 +390,9 @@ impl Cpu {
             let y = (self.v[y] as usize + byte) % 64;
             for bit in 0..8 {
                 let x = (self.v[x] as usize + bit) % 64;
-                let color = (self.memory[self.i + byte] >> (7 - bit as u8)) & 1;
-                self.v[0x0f] |= color & self.vram[y][x];
-                self.vram[y][x] ^= color;
+                let pixel = (self.memory[self.i + byte] >> (7 - bit as u8)) & 1;
+                self.v[0x0f] |= pixel & self.vram[y][x];
+                self.vram[y][x] ^= pixel;
             }
         }
         self.vram_changed = true;
@@ -451,7 +451,7 @@ impl Cpu {
     /// LD F, Vx
     /// Set I = location of sprite for digit Vx.
     fn op_fx29(&mut self, x: usize) -> PointerAction {
-
+        self.i = self.v[x] as usize * 5;
         PointerAction::Next
     }
 
@@ -476,8 +476,8 @@ impl Cpu {
     /// The interpreter reads values from memory starting at location
     /// I into registers V0 through Vx.
     fn op_fx65(&mut self, x: usize) -> PointerAction {
-
         PointerAction::Next
+
     }
 
 }

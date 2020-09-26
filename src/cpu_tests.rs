@@ -385,4 +385,13 @@ fn test_fx1e() {
     assert_eq!(cpu.pc, PC + 2);
 }
 
+#[test]
+fn test_fx29() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.i = 10;
+    cpu = set_register_values_and_run(cpu, 5, 0, 0xf029);
+    assert_eq!(cpu.i, 25);
+    assert_eq!(cpu.pc, PC + 2);
+}
+
 // TODO: Write tests for opcodes and write opcode
