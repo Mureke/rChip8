@@ -40,8 +40,8 @@ fn main() {
     processor.read_data_to_memory(&rom.data);
 
     // Main loop.
-    while let Ok(_) = event_handler.event_poller() {
-        let cycle_state = processor.cycle();
+    while let Ok(keys) = event_handler.event_poller() {
+        let cycle_state = processor.cycle(keys);
         if cycle_state.vram_changed {
             display.draw(cycle_state.vram);
         }

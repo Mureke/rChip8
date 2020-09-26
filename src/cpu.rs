@@ -89,7 +89,8 @@ impl Cpu {
         }
     }
 
-    pub fn cycle(&mut self) -> CycleState {
+    pub fn cycle(&mut self, keys: [bool;16]) -> CycleState {
+        self.keys = keys;
         self.vram_changed = false;
         if self.wait_for_input {
             for i in 0..self.keys.len() {
@@ -253,7 +254,7 @@ impl Cpu {
     ///  Adds the value kk to the value of register Vx, then stores the result in Vx.
     fn op_7xkk(&mut self, x: usize, kk: u8) -> PointerAction {
         // TODO: Not implemented correctly
-        self.v[x] = self.v[x] + kk;
+        self.v[x] = (self.v[x] as u16 + kk as u16) as u8;
         PointerAction::Next
     }
 
@@ -382,12 +383,10 @@ impl Cpu {
     /// DRW Vx, Vy, nibble
     ///  Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
     fn op_dxyn(&mut self, x: usize, y: usize, n: usize) -> PointerAction {
-        // TODO: Validate
-
         self.v[0x0F] = 0;
 
         for byte in 0..n {
-            let y = (self.v[y] as usize + byte) % 64;
+            let y = (self.v[y] as usize + byte) % 32;
             for bit in 0..8 {
                 let x = (self.v[x] as usize + bit) % 64;
                 let pixel = (self.memory[self.i + byte] >> (7 - bit as u8)) & 1;
@@ -451,7 +450,7 @@ impl Cpu {
     /// LD F, Vx
     /// Set I = location of sprite for digit Vx.
     fn op_fx29(&mut self, x: usize) -> PointerAction {
-        self.i = self.v[x] as usize * 5;
+        self.i = (self.v[x] as usize) * 5;
         PointerAction::Next
     }
 
@@ -460,7 +459,9 @@ impl Cpu {
     /// the hundreds digit in memory at location in I, the tens digit
     /// at location I+1, and the ones digit at location I+2.
     fn op_fx33(&mut self, x: usize) -> PointerAction {
-
+        self.memory[self.i] = self.v[x] / 100;
+        self.memory[self.i + 1] = (self.v[x] % 100) / 10;
+        self.memory[self.i + 2] = self.v[x] % 10;
         PointerAction::Next
     }
 
@@ -468,7 +469,9 @@ impl Cpu {
     /// The interpreter copies the values of registers V0 through Vx
     /// into memory, starting at the address in I.
     fn op_fx55(&mut self, x: usize) -> PointerAction {
-
+        for i in 0..x + 1 {
+            self.memory[self.i + i] = self.v[i]
+        }
         PointerAction::Next
     }
 
@@ -476,6 +479,9 @@ impl Cpu {
     /// The interpreter reads values from memory starting at location
     /// I into registers V0 through Vx.
     fn op_fx65(&mut self, x: usize) -> PointerAction {
+        for i in 0..x + 1 {
+            self.v[i] = self.memory[self.i + i]
+        }
         PointerAction::Next
 
     }

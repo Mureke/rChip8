@@ -93,7 +93,7 @@ fn test_op2nnn() {
     cpu.pc = 0x02666;
     cpu.run_opcode(0x2267);
     assert_eq!(cpu.sp, 1);
-    assert_eq!(cpu.stack[0], 0x02666);
+    assert_eq!(cpu.stack[0], 0x02668);
     assert_eq!(cpu.pc, 0x0267)
 }
 
@@ -392,6 +392,48 @@ fn test_fx29() {
     cpu = set_register_values_and_run(cpu, 5, 0, 0xf029);
     assert_eq!(cpu.i, 25);
     assert_eq!(cpu.pc, PC + 2);
+}
+
+#[test]
+fn test_fx33() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.v[5] = 187;
+    cpu.i = 300;
+    cpu = set_register_values_and_run(cpu, 5, 2, 0xf533);
+    assert_eq!(cpu.memory[300], 1);
+    assert_eq!(cpu.memory[301], 8);
+    assert_eq!(cpu.memory[302], 7);
+    assert_eq!(cpu.pc, PC + 2);
+}
+
+#[test]
+fn test_fx55() {
+
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.i = 300;
+    cpu.run_opcode(0xf555);
+    for i in 0..5 {
+        assert_eq!(cpu.memory[300+i], cpu.v[i])
+    }
+    assert_eq!(cpu.pc, PC + 2);
+
+}
+
+#[test]
+fn test_fx65() {
+    let mut cpu = new_cpu_with_inital_data();
+    cpu.i = 300;
+    for i in 0..7 {
+        cpu.memory[cpu.i + i] = i as u8;
+    }
+    cpu.run_opcode(0xf765);
+
+    for i in 0..7 {
+        assert_eq!(cpu.v[i], cpu.memory[cpu.i + i])
+
+    }
+    assert_eq!(cpu.pc, PC + 2);
+
 }
 
 // TODO: Write tests for opcodes and write opcode
